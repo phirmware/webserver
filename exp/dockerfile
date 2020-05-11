@@ -1,0 +1,3 @@
+FROM postgres:latest
+
+ADD /tables/game.sql /docker-entrypoint-initdb.d/tables/
