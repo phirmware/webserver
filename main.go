@@ -61,14 +61,13 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		" dbname=%s sslmode=disable",
-		host, port, user, dbname)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, port, user, dbname)
 	us, err := models.NewUserService(psqlInfo)
 	if err != nil {
 		panic(err)
 	}
 	defer us.Close()
+	// us.DestructiveReset()
 	us.AutoMigrate()
 
 	staticC := controllers.NewStatic()
@@ -81,7 +80,11 @@ func main() {
 	r.Handle("/FAQ", staticC.FaqView).Methods("GET")
 	r.HandleFunc("/signup", usersC.New).Methods("GET")
 	r.HandleFunc("/signup", usersC.Create).Methods("POST")
+	r.HandleFunc("/login", usersC.Login).Methods("GET")
+	r.HandleFunc("/login", usersC.HandleLogin).Methods("POST")
 	r.HandleFunc("/gallery/new", galleryC.New).Methods("GET")
+	r.HandleFunc("/cookie-test", usersC.CookieTest)
+
 	var h http.Handler = http.HandlerFunc(notFound)
 	r.NotFoundHandler = h
 	fmt.Printf("Server listening on serverPort %s", serverPort)
