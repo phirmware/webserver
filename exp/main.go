@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"lenslocked.com/models"
-
-	_ "github.com/lib/pq"
 )
 
 const (
@@ -16,32 +14,34 @@ const (
 )
 
 func main() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		" dbname=%s sslmode=disable",
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable",
 		host, port, user, dbname)
 	us, err := models.NewUserService(psqlInfo)
 	if err != nil {
 		panic(err)
 	}
-
-	// us.DestructiveReset()
-
-	// user := models.User{
-	// 	Name:  "chibuzor ojukwu",
-	// 	Email: "chibuzorojukwu1@gmail.com",
-	// }
-
-	foundUser, err := us.ByEmail("chibuzorojukwu1@gmail.com")
+	defer us.Close()
+	us.DestructiveReset()
+	user := models.User{
+		Name:     "Michael Scott",
+		Email:    "michael@dundermifflin.com",
+		Password: "bestboss",
+	}
+	err = us.Create(&user)
 	if err != nil {
 		panic(err)
 	}
-	if err := us.Delete(foundUser.ID); err != nil {
+	// Verify that the user has a Remember and RememberHash
+	fmt.Printf("%+v\n", user)
+	if user.Remember == "" {
+		panic("Invalid remember token")
+	}
+	// Now verify that we can lookup a user with that remember
+	// token
+	user2, err := us.ByRemember(user.Remember)
+	if err != nil {
 		panic(err)
 	}
-
-	_, err = us.ByID(foundUser.ID)
-	if err != models.ErrNotFound {
-		fmt.Println("Error: User wasnt deleted")
-	}
+	fmt.Printf("%+v\n", *user2)
 
 }
