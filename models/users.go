@@ -8,7 +8,6 @@ import (
 	"lenslocked.com/rand"
 
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 var (
@@ -66,13 +65,15 @@ type UserService interface {
 
 // usergorm represents our database implementation layer
 type userGorm struct {
-	db   *gorm.DB
-	hmac hash.HMAC
+	db *gorm.DB
 }
 
 type userValidator struct {
 	UserDB
+	hmac hash.HMAC
 }
+
+type userValFn func(*User) error
 
 var _ UserDB = &userGorm{}
 var _ UserService = &userService{}
@@ -83,10 +84,8 @@ func newUserGorm(connectionInfo string) (*userGorm, error) {
 		return nil, err
 	}
 	db.LogMode(true)
-	hmac := hash.NewHMAC(hmacSecretKey)
 	return &userGorm{
-		db:   db,
-		hmac: hmac,
+		db: db,
 	}, nil
 }
 
@@ -98,16 +97,36 @@ func first(db *gorm.DB, dst interface{}) error {
 	return err
 }
 
+// Create will create the provided user and backfill data
+func (uv *userValidator) Create(user *User) error {
+	if user.Remember == "" {
+		token, err := rand.RememberToken()
+		if err != nil {
+			return err
+		}
+		user.Remember = token
+	}
+
+	if err := runUserValFns(user, uv.bcryptPassword, uv.hmacRemember); err != nil {
+		return err
+	}
+
+	return uv.UserDB.Create(user)
+}
+
 // NewUserService returns a userservice type
 func NewUserService(connectionInfo string) (UserService, error) {
 	ug, err := newUserGorm(connectionInfo)
 	if err != nil {
 		return nil, err
 	}
+	hmac := hash.NewHMAC(hmacSecretKey)
+	uv := &userValidator{
+		UserDB: ug,
+		hmac:   hmac,
+	}
 	return &userService{
-		UserDB: userValidator{
-			UserDB: ug,
-		},
+		UserDB: uv,
 	}, nil
 }
 
@@ -140,6 +159,13 @@ func (ug *userGorm) ByEmail(email string) (*User, error) {
 
 // Create creates a provided user in the DataBase
 func (ug *userGorm) Create(user *User) error {
+	return ug.db.Create(user).Error
+}
+
+func (uv *userValidator) bcryptPassword(user *User) error {
+	if user.Password == "" {
+		return nil
+	}
 	pwBytes := []byte(user.Password + userPwPepper)
 	hashedBytes, err := bcrypt.GenerateFromPassword(pwBytes, bcrypt.DefaultCost)
 	if err != nil {
@@ -147,16 +173,25 @@ func (ug *userGorm) Create(user *User) error {
 	}
 	user.PasswordHash = string(hashedBytes)
 	user.Password = ""
+	return nil
+}
 
+func (uv *userValidator) hmacRemember(user *User) error {
 	if user.Remember == "" {
-		token, err := rand.RememberToken()
-		if err != nil {
+		return nil
+	}
+	user.RememberHash = uv.hmac.Hash(user.Remember)
+	return nil
+}
+
+// A util function that loops over validation functions and executes in the input order
+func runUserValFns(user *User, fns ...userValFn) error {
+	for _, fn := range fns {
+		if err := fn(user); err != nil {
 			return err
 		}
-		user.Remember = token
 	}
-	user.RememberHash = ug.hmac.Hash(user.Remember)
-	return ug.db.Create(user).Error
+	return nil
 }
 
 // Authenticate logins the user
@@ -178,16 +213,20 @@ func (us *userService) Authenticate(email, password string) (*User, error) {
 
 // Update updates user in the database
 func (ug *userGorm) Update(user *User) error {
-	if user.Remember != "" {
-		user.RememberHash = ug.hmac.Hash(user.Remember)
-	}
 	return ug.db.Save(user).Error
 }
 
+// Update runs validations and calls the Update method on the next UserDB type
+func (uv *userValidator) Update(user *User) error {
+	if user.Remember != "" {
+		user.RememberHash = uv.hmac.Hash(user.Remember)
+	}
+	return uv.UserDB.Update(user)
+}
+
 // ByRemember ooks up a user by a given remember token and returns the user and an error(nil/value)
-func (ug *userGorm) ByRemember(token string) (*User, error) {
+func (ug *userGorm) ByRemember(rememberHash string) (*User, error) {
 	var user User
-	rememberHash := ug.hmac.Hash(token)
 	err := first(ug.db.Where("remember_hash = ?", rememberHash), &user)
 	if err != nil {
 		return nil, err
@@ -195,13 +234,29 @@ func (ug *userGorm) ByRemember(token string) (*User, error) {
 	return &user, nil
 }
 
+// ByRemember will hash the remmeber token and then call the ByRemember on the next UserDB layer
+func (uv *userValidator) ByRemember(token string) (*User, error) {
+	user := User{
+		Remember: token,
+	}
+	if err := runUserValFns(&user, uv.hmacRemember); err != nil {
+		return nil, err
+	}
+	return uv.UserDB.ByRemember(user.RememberHash)
+}
+
 // Delete deletes a user from the databse
 func (ug *userGorm) Delete(id uint) error {
+	user := User{Model: gorm.Model{ID: id}}
+	return ug.db.Delete(&user).Error
+}
+
+// Delete runs validations and passes to the next Delete on UserDB interface
+func (uv userValidator) Delete(id uint) error {
 	if id == 0 {
 		return ErrInvalidID
 	}
-	user := User{Model: gorm.Model{ID: id}}
-	return ug.db.Delete(&user).Error
+	return uv.UserDB.Delete(id)
 }
 
 // DestructiveReset drops the user table if it exists and creates another one

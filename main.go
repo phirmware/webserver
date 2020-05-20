@@ -10,6 +10,7 @@ import (
 	"lenslocked.com/controllers"
 
 	"github.com/gorilla/mux"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"lenslocked.com/views"
 )
 
