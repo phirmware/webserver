@@ -107,7 +107,7 @@ func (uv *userValidator) Create(user *User) error {
 		user.Remember = token
 	}
 
-	if err := runUserValFns(user, uv.bcryptPassword, uv.hmacRemember); err != nil {
+	if err := runUserValFns(user, uv.bcryptPassword, uv.setRememberIfUnset, uv.hmacRemember); err != nil {
 		return err
 	}
 
@@ -184,6 +184,27 @@ func (uv *userValidator) hmacRemember(user *User) error {
 	return nil
 }
 
+func (uv *userValidator) setRememberIfUnset(user *User) error {
+	if user.Remember != "" {
+		return nil
+	}
+	token, err := rand.RememberToken()
+	if err != nil {
+		return err
+	}
+	user.Remember = token
+	return nil
+}
+
+func (uv *userValidator) idGreaterThan(n uint) userValFn {
+	return userValFn(func(user *User) error {
+		if user.ID < n {
+			return ErrInvalidID
+		}
+		return nil
+	})
+}
+
 // A util function that loops over validation functions and executes in the input order
 func runUserValFns(user *User, fns ...userValFn) error {
 	for _, fn := range fns {
@@ -218,8 +239,8 @@ func (ug *userGorm) Update(user *User) error {
 
 // Update runs validations and calls the Update method on the next UserDB type
 func (uv *userValidator) Update(user *User) error {
-	if user.Remember != "" {
-		user.RememberHash = uv.hmac.Hash(user.Remember)
+	if err := runUserValFns(user, uv.bcryptPassword, uv.hmacRemember); err != nil {
+		return err
 	}
 	return uv.UserDB.Update(user)
 }
@@ -252,9 +273,12 @@ func (ug *userGorm) Delete(id uint) error {
 }
 
 // Delete runs validations and passes to the next Delete on UserDB interface
-func (uv userValidator) Delete(id uint) error {
-	if id == 0 {
-		return ErrInvalidID
+func (uv *userValidator) Delete(id uint) error {
+	var user User
+	user.ID = id
+	err := runUserValFns(&user, uv.idGreaterThan(0))
+	if err != nil {
+		return err
 	}
 	return uv.UserDB.Delete(id)
 }
