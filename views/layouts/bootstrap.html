@@ -1,27 +1,31 @@
 {{define "bootstrap"}}
-    <!DOCTYPE html>
-    <html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 
-    <head>
-        <title>LensLocked.com</title>
-        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
-    </head>
+<head>
+    <title>LensLocked.com</title>
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+</head>
 
-    <body>
-        {{template "navbar"}}
+<body>
+    {{template "navbar"}}
 
-        <div class="container-fluid">
-            <!-- Our content will go here... somehow -->
-            {{template "yield" .}}
+    <div class="container-fluid">
+        <!-- Our content will go here... somehow -->
+        {{ if .Alert }}
+        {{ template "alert" .Alert }}
+        {{ end }}
 
-            {{ template "footer" .Footer}}
-        </div>
-        <!-- jquery & Bootstrap JS -->
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js">
-        </script>
-        <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
-        </script>
-    </body>
+        {{ template "yield" .Yield }}
 
-    </html>
+        {{ template "footer" }}
+    </div>
+    <!-- jquery & Bootstrap JS -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js">
+    </script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js">
+    </script>
+</body>
+
+</html>
 {{end}}
