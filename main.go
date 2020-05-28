@@ -31,30 +31,6 @@ func setHeaders(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html")
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
-	setHeaders(w)
-	must(homeView.Render(w, nil))
-}
-
-func contact(w http.ResponseWriter, r *http.Request) {
-	type data struct {
-		Name   string
-		Footer string
-	}
-
-	pageData := data{
-		Name:   "Awesome",
-		Footer: "Coutesy",
-	}
-	setHeaders(w)
-	must(contactView.Render(w, pageData))
-}
-
-func questions(w http.ResponseWriter, r *http.Request) {
-	setHeaders(w)
-	must(questionsView.Render(w, nil))
-}
-
 func notFound(w http.ResponseWriter, r *http.Request) {
 	setHeaders(w)
 	fmt.Fprint(w, "<h3>404 Not Found</h3>")
@@ -63,16 +39,16 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 func main() {
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, port, user, dbname)
-	us, err := models.NewUserService(psqlInfo)
+	services, err := models.NewServices(psqlInfo)
 	if err != nil {
 		panic(err)
 	}
-	defer us.Close()
-	// us.DestructiveReset()
-	us.AutoMigrate()
+	defer services.User.Close()
+	services.User.AutoMigrate()
+	// services.User.DestructiveReset()
 
 	staticC := controllers.NewStatic()
-	usersC := controllers.NewUsers(us)
+	usersC := controllers.NewUsers(services.User)
 	galleryC := controllers.NewGallery()
 
 	r := mux.NewRouter()
@@ -90,10 +66,4 @@ func main() {
 	r.NotFoundHandler = h
 	fmt.Printf("Server listening on serverPort %s", serverPort)
 	log.Fatal(http.ListenAndServe(serverPort, r))
-}
-
-func must(err error) {
-	if err != nil {
-		panic(err)
-	}
 }

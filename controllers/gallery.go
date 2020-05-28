@@ -20,7 +20,5 @@ func NewGallery() *Gallery {
 
 // New method renders the new gallery page
 func (g Gallery) New(w http.ResponseWriter, r *http.Request) {
-	if err := g.view.Render(w, nil); err != nil {
-		panic(err)
-	}
+	g.view.Render(w, nil)
 }
