@@ -16,8 +16,12 @@
 <form action="/galleries/{{.ID}}/update" method="POST">
     <div class="form-group">
         <label for="title">Title</label>
-        <input type="text" name="title" value="{{ .Title }}" class="form-control" id="title" placeholder="What is the title">
+        <input type="text" name="title" value="{{ .Title }}" class="form-control" id="title"
+            placeholder="What is the title">
     </div>
     <button type=" submit" class="btn btn-primary">Update</button>
+</form>
+<form action="/galleries/{{.ID}}/delete" method="POST">
+    <button type="submit" class="btn btn-danger">Delete</button>
 </form>
 {{end}}

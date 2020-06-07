@@ -75,7 +75,7 @@ func (u *Users) Create(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
-	http.Redirect(w, r, "/cookie-test", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 // HandleLogin handles the request to login from the user
@@ -104,7 +104,7 @@ func (u *Users) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		u.NewView.Render(w, vd)
 		return
 	}
-	http.Redirect(w, r, "/cookie-test", http.StatusFound)
+	http.Redirect(w, r, "/galleries", http.StatusFound)
 }
 
 func (u *Users) signIn(w http.ResponseWriter, user *models.User) error {
