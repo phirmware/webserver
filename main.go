@@ -52,6 +52,10 @@ func main() {
 		UserService: services.User,
 	}
 
+	userMw := middleware.User{
+		UserService: services.User,
+	}
+
 	r := mux.NewRouter()
 
 	staticC := controllers.NewStatic()
@@ -80,5 +84,5 @@ func main() {
 	var h http.Handler = http.HandlerFunc(notFound)
 	r.NotFoundHandler = h
 	fmt.Printf("Server listening on serverPort %s", serverPort)
-	log.Fatal(http.ListenAndServe(serverPort, r))
+	log.Fatal(http.ListenAndServe(serverPort, userMw.Apply(r)))
 }
