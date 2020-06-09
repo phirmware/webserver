@@ -200,3 +200,8 @@ func (g *Galleries) Index(w http.ResponseWriter, r *http.Request) {
 	vd.Yield = galleries
 	g.IndexView.Render(w, r, vd)
 }
+
+// ImageUpload handles image upload for galleries
+func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
+	// TODO: Implement this
+}
