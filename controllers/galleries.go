@@ -203,5 +203,13 @@ func (g *Galleries) Index(w http.ResponseWriter, r *http.Request) {
 
 // ImageUpload handles image upload for galleries
 func (g *Galleries) ImageUpload(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement this
+	gallery, err := g.galleryByID(w, r)
+	if err != nil {
+		return
+	}
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID {
+		http.Error(w, "Gallery not found", http.StatusNotFound)
+		return
+	}
 }
