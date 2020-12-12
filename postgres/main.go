@@ -8,16 +8,17 @@ import (
 )
 
 const (
-	host   = "localhost"
-	port   = 5432
-	user   = "postgres"
-	dbname = "lenslocked_dev"
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	dbname   = "lenslocked_dev"
+	password = "password"
 )
 
 func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		" dbname=%s sslmode=disable",
-		host, port, user, dbname)
+		" dbname=%s password=%s sslmode=disable",
+		host, port, user, dbname, password)
 	_, err := gorm.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)

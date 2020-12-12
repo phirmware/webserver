@@ -72,7 +72,7 @@ type UserService interface {
 	UserDB
 }
 
-// usergorm represents our database implementation layer
+// userGorm represents our database implementation layer
 type userGorm struct {
 	db *gorm.DB
 }
@@ -117,7 +117,7 @@ func first(db *gorm.DB, dst interface{}) error {
 	return err
 }
 
-// Create will create the provided user and backfill data
+// Create will create the provided user and back fill data
 func (uv *userValidator) Create(user *User) error {
 	if err := runUserValFns(user, uv.passwordRequired, uv.passwordMinLength, uv.bcryptPassword, uv.passwordHashRequired, uv.setRememberIfUnset, uv.rememberMinBytes, uv.hmacRemember, uv.rememberHashRequired, uv.normalizeEmail, uv.requireEmail, uv.emailFormat, uv.emailIsAvail); err != nil {
 		return err
@@ -138,7 +138,7 @@ func (uv *userValidator) ByEmail(email string) (*User, error) {
 	return uv.UserDB.ByEmail(user.Email)
 }
 
-// NewUserService returns a userservice type
+// NewUserService returns a user service type
 func NewUserService(db *gorm.DB) UserService {
 	ug := &userGorm{db}
 	hmac := hash.NewHMAC(hmacSecretKey)

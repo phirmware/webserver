@@ -23,7 +23,7 @@ else
    echo "Something went wrong"
 fi
 
-docker run --rm -d  -p 5432:5432 -e POSTGRES_DB=lenslocked_dev webdevgo:latest
+docker run --rm -d  -p 5432:5432 -e POSTGRES_DB=lenslocked_dev -e POSTGRES_PASSWORD=password webdevgo:latest
 if [ $? -eq 0 ]; then
    echo "Postgres Container running succesfully"
    echo "Checking db connectivity, please wait........."

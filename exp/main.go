@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/jinzhu/gorm"
 	"lenslocked.com/models"
 )
 
@@ -16,18 +17,17 @@ const (
 func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable",
 		host, port, user, dbname)
-	us, err := models.NewUserService(psqlInfo)
+	g, err := gorm.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
 	}
-	defer us.Close()
-	us.DestructiveReset()
+	defer g.Close()
 	user := models.User{
 		Name:     "Michael Scott",
 		Email:    "michael@dundermifflin.com",
 		Password: "bestboss",
 	}
-	err = us.Create(&user)
+	err = g.Create(&user).Error
 	if err != nil {
 		panic(err)
 	}
@@ -38,10 +38,10 @@ func main() {
 	}
 	// Now verify that we can lookup a user with that remember
 	// token
-	user2, err := us.ByRemember(user.Remember)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%+v\n", *user2)
+	// user2, err := us.ByRemember(user.Remember)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("%+v\n", *user2)
 
 }

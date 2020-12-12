@@ -12,21 +12,17 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	"lenslocked.com/views"
 )
 
 const serverPort = ":8080"
 
 const (
-	host   = "localhost"
-	port   = 5432
-	user   = "postgres"
-	dbname = "lenslocked_dev"
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	dbname   = "lenslocked_dev"
+	password = "password"
 )
-
-var homeView *views.View
-var contactView *views.View
-var questionsView *views.View
 
 func setHeaders(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html")
@@ -39,13 +35,15 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, port, user, dbname)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=disable", host, port, user, dbname, password)
 	services, err := models.NewServices(psqlInfo)
 	if err != nil {
 		panic(err)
 	}
 	defer services.Close()
-	services.AutoMigrate()
+	if err := services.AutoMigrate(); err != nil {
+		panic(err)
+	}
 	// services.DestructiveReset()
 
 	requireUserMw := middleware.RequireUser{
